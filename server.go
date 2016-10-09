@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go/request"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,7 +34,7 @@ func main() {
 		// Run this on all requests
 		// Should be moved to a proper middleware
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Token,Origin, X-Requested-With, Content-Type, Accept, Authorization")
 		c.Next()
 	})
 	router.OPTIONS("/*cors", func(c *gin.Context) {
@@ -43,7 +44,7 @@ func main() {
 	router.POST("/user/token", func(c *gin.Context) {
 		var login Login
 		val := c.Bind(&login)
-		if !val {
+		if val != nil {
 			c.JSON(200, gin.H{"code": 401, "msg": "Both name & password are required"})
 			return
 		}
@@ -52,11 +53,12 @@ func main() {
 			// Headers
 			token.Header["alg"] = "HS256"
 			token.Header["typ"] = "JWT"
-
+			claims := make(jwt.MapClaims)
 			// Claims
-			token.Claims["name"] = validUser.Name
-			token.Claims["mail"] = validUser.Mail
-			token.Claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+			claims["name"] = validUser.Name
+			claims["mail"] = validUser.Mail
+			claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+			token.Claims = claims
 			tokenString, err := token.SignedString([]byte(mySigningKey))
 			if err != nil {
 				c.JSON(200, gin.H{"code": 500, "msg": "Server error!"})
@@ -69,7 +71,7 @@ func main() {
 	})
 
 	router.POST("/user/balance", func(c *gin.Context) {
-		token, err := jwt.ParseFromRequest(c.Request, func(token *jwt.Token) (interface{}, error) {
+		token, err := request.ParseFromRequest(c.Request, &request.HeaderExtractor{"Token"}, func(token *jwt.Token) (interface{}, error) {
 			b := ([]byte(mySigningKey))
 			return b, nil
 		})
@@ -78,7 +80,9 @@ func main() {
 			c.JSON(200, gin.H{"code": 403, "msg": err.Error()})
 		} else {
 			if token.Valid {
-				token.Claims["balance"] = 49
+				claims := make(jwt.MapClaims)
+				claims["balance"] = 49
+				token.Claims = claims
 				tokenString, err := token.SignedString([]byte(mySigningKey))
 				if err != nil {
 					c.JSON(200, gin.H{"code": 500, "msg": "Server error!"})

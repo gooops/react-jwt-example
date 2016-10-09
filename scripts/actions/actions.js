@@ -38,6 +38,7 @@ actions.getBalance.listen(function(){
     method: "post",
     type: "json",
     headers: {
+       'Token': jwt,
       'Authorization': "Bearer "+jwt,
     },
     success: function (resp) {
