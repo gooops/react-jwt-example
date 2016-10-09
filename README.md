@@ -7,6 +7,8 @@ React-jwt example
 
 ```
 git clone https://github.com/rainyear/react-jwt.git
+npm install gulp
+npm install gulp-notify gulp-util gulp-streamify gulp-uglify gulp-webserver browserify reactify vinyl-source-stream watchify
 ```
 
 #### client
